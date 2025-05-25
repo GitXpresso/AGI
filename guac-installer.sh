@@ -40,7 +40,7 @@ fi
 echo "moving war file to tomcat webapps directory"
 sudo mv guacamole-$GUACAMOLE_VERSION.war /var/lib/tomcat/webapps/guacamole.war
 sudo mkdir -p /etc/guacamole/{extensions,lib}
-echo "GUACAMOLE_HOME=/etc/guacamole" >> tomcat && sudo mv tomcat /etc/default
+echo "GUACAMOLE_HOME=/etc/guacamole" >> ./tomcat && sudo mv tomcat /etc/default
 cat << EOF >./guacamole.properties
 # Guacamole properties
 
@@ -111,17 +111,17 @@ EOF
 sudo cp guacamole.properties /etc/guacamole/guacamole.properties
 sudo touch /etc/guacamole/guacd.conf
 sudo systemctl enable --now mariadb
-sudo mysql -u root -e 'quit' &> /dev/null
+sudo mysql -u root -e "quit" &> /dev/null
 if [ $? -gt 0 ]; then
     echo "you don't have a password set for mysql"
     read -s -p "set the password for mysql so no one can access mysql database but you: " mysqlpassword
     # set password for user=root
-    sudo mysql -e 'UPDATE mysql.user SET Password = PASSWORD('$mysqlpassword') WHERE User = 'root'"
-    sudo mysql --user=root --password=$rootpassword -e "DROP USER ''@'localhost'"
-    sudo mysql --user=root --password=$rootpassword -e "DROP USER ''@'$(hostname)'"
-    sudo mysql --user=root --password=$rootpassword -e "DROP DATABASE test"
-    sudo mysql --user=root --password=$rootpassword -e "FLUSH PRIVILEGES"
-    mysql --user=root --password=$mysqlpassword -e "CREATE DATABASE guacamole_db;"
+    mysql -e "UPDATE mysql.user SET Password = PASSWORD('$mysqlpassword') WHERE User = 'root'"
+    mysql -e "DROP USER ''@'localhost'"
+    mysql -e "DROP USER ''@'$(hostname)'"
+    mysql -e "DROP DATABASE test"
+    mysql -e "FLUSH PRIVILEGES"
+    sudo mysql --user=root --password=$mysqlpassword -e "CREATE DATABASE guacamole_db;"
     wget -q --show-progress -P ~/ https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
     tar -xf ~/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
     cd ~/guacamole-auth-jdbc-1.5.4/mysql; sudo cat schema/*.sql | mysql --user=root --password=$mysqlpassword -e 'guacamole_db'
@@ -146,5 +146,10 @@ else
    sudo mysql --user=root --password=$rootpassword -e "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole_db.* TO 'guacamole_user'@'localhost';"
    sudo mysql --user=root --password=$rootpassword -e "FLUSH PRIVILEGES"
 fi
-  
-
+   sudo cp ./guacamole-auth-jdbc-mysql-$GUACAMOLE_VERSION.jar /etc/guacamole/extensions/
+   echo "installing java 8.2"
+   sudo dnf install https://cdn.mysql.com/archives/mysql-connector-java-8.2/mysql-connector-j-8.2.0-1.fc37.noarch.rpm
+   sudo cp /usr/share/java/mysql-connector-java.jar /etc/guacamole/lib/mysql-connector.jar
+   echo "[server]" >> /etc/guacamole/guacd.conf
+   echo "bind_host = 0.0.0.0" >> /etc/guacamole/guacd.conf
+   echo "bind_port = 4822" >> /etc/guacamole/guacd.conf
