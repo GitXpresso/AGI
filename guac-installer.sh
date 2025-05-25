@@ -108,14 +108,13 @@ guacd-port: 4822
 # Disable user input history
 #history-size: 0
 EOF
-sudo cp guacamole.properties /etc/guacamole/guacamole.properties
+sudo mv guacamole.properties ~/ 
 sudo touch /etc/guacamole/guacd.conf
 sudo systemctl enable --now mariadb
 sudo mysql -u root -e "quit" &> /dev/null
 if [ $? -gt 0 ]; then
-    echo "you don't have a password set for mysql"
+    echo "you dont have password set for mysql"
     read -s -p "set the password for mysql so no one can access mysql database but you: " mysqlpassword
-    # set password for user=root
     mysql -e "UPDATE mysql.user SET Password = PASSWORD('$mysqlpassword') WHERE User = 'root'"
     mysql -e "DROP USER ''@'localhost'"
     mysql -e "DROP USER ''@'$(hostname)'"
