@@ -1,6 +1,9 @@
 #!/bin/bash
 GUACAMOLE_VERSION="1.5.5" 
-
+if [ $( id -u ) ]; then
+    echo "run this script as root (use sudo)"
+    exit 1 
+fi
 if [ -d /etc/dnf ]; then
 packages=("wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "tomcat" "tar" "mariadb-server")
 for dnfpackages in "$(packages[@])'; do
