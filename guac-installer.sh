@@ -23,3 +23,4 @@ fi
 echo "Downloading tarball"
 wget -q --show-progress https://downloads.apache.org/guacamole/$GUACAMOLE_VERSION/source/guacamole-server-$GUACAMOLE_VERSION.tar.gz
 tar -xvf guacamole-server-$GUACAMOLE_VERSION.tar.gz 
+cd guacamole-server-$GUACAMOLE_VERSION
