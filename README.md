@@ -1,2 +1,5 @@
 # AGI
-Apache Guacamole installer that supports fedora, arch linux, and debian based distro's
+A=Apache
+G=Guacamole
+I=Installer
+as of writing this base script currently supports fedora and has not yet been tested.
