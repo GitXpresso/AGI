@@ -116,34 +116,35 @@ if [ $? -gt 0 ]; then
     echo "you don't have a password set for mysql"
     read -s -p "set the password for mysql so no one can access mysql database but you: " mysqlpassword
     # set password for user=root
-    mysql -e "UPDATE mysql.user SET Password = PASSWORD('$mysqlpassword') WHERE User = 'root'"
-    # kills anonymous users
-    mysql -e "DROP USER ''@'localhost'"
-    # Because our hostname varies we'll use some Bash magic here.
-    mysql -e "DROP USER ''@'$(hostname)'"
-    mysql -e "DROP DATABASE test"
-    mysql -e "FLUSH PRIVILEGES"
+    sudo mysql -e 'UPDATE mysql.user SET Password = PASSWORD('$mysqlpassword') WHERE User = 'root'"
+    sudo mysql --user=root --password=$rootpassword -e "DROP USER ''@'localhost'"
+    sudo mysql --user=root --password=$rootpassword -e "DROP USER ''@'$(hostname)'"
+    sudo mysql --user=root --password=$rootpassword -e "DROP DATABASE test"
+    sudo mysql --user=root --password=$rootpassword -e "FLUSH PRIVILEGES"
     mysql --user=root --password=$mysqlpassword -e "CREATE DATABASE guacamole_db;"
     wget -q --show-progress -P ~/ https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
     tar -xf ~/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
     cd ~/guacamole-auth-jdbc-1.5.4/mysql; sudo cat schema/*.sql | mysql --user=root --password=$mysqlpassword -e 'guacamole_db'
-    mysql --user=root --password=$mysqlpassword -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+    sudo mysql --user=root --password=$mysqlpassword -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
     read -s -p  "set a password for the new mysql user 'guacamole_user': " mysqlguacpass
-    mysql --user=root --password=$mysqlpassword -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+    sudo mysql --user=root --password=$mysqlpassword -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+    sudo mysql --user=root --password=$mysqlpassword -e "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole_db.* TO 'guacamole_user'@'localhost';"
 else
    echo "your mysql root password is probably the same as your password set for the root user"
    read -s -p "enter the password set for the root user: " $rootpassword
     # kills anonymous users
-   mysql -e "DROP USER ''@'localhost'"
+   sudo mysql --user=root --password=$rootpassword -e "DROP USER ''@'localhost'"
    # Because our hostname varies we'll use some Bash magic here.
-   mysql -e "DROP USER ''@'$(hostname)'"
-   mysql -e "DROP DATABASE test"
-   mysql -e "FLUSH PRIVILEGES"
+   sudo mysql --user=root --password=$rootpassword -e "DROP USER ''@'$(hostname)'"
+   sudo mysql --user=root --password=$rootpassword -e "DROP DATABASE test"
+   sudo mysql --user=root --password=$rootpassword -e "FLUSH PRIVILEGES"
    wget -q --show-progress -P ~/ https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
    tar -xf ~/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
    cd ~/guacamole-auth-jdbc-1.5.4/mysql; sudo cat schema/*.sql | mysql --user=root --password=$rootpassword -e 'guacamole_db'
    read -s -p "set a password for the new mysql user 'guacamole_user': " mysqlguacpass
-   mysql --user=root --password=$rootpassword -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+   sudo mysql --user=root --password=$rootpassword -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+   sudo mysql --user=root --password=$rootpassword -e "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole_db.* TO 'guacamole_user'@'localhost';"
+   sudo mysql --user=root --password=$rootpassword -e "FLUSH PRIVILEGES"
 fi
   
 
