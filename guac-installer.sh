@@ -25,7 +25,6 @@ if [ -d /etc/dnf ]; then
             echo "$dnfpackages is installed"
         fi
     done
-fi
 clear
 
 if [ ! $(pwd) == "$HOME" ]; then
