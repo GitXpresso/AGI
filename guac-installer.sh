@@ -26,6 +26,7 @@ if [ -d /etc/dnf ]; then
         fi
     done
 fi
+clear
 
 if [ ! $(pwd) == "$HOME" ]; then
     cd $HOME # Quoting "$HOME" is safer: cd "$HOME"
