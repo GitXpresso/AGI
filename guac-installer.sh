@@ -14,7 +14,7 @@ fi
 # No changes to this shebang or initial comments
 
 if [ -d /etc/dnf ]; then
-    packages=("wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "tomcat")
+    packages=("wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "tomcat" "mariadb-server")
     for dnfpackages in "${packages[@]}"; do
         rpm -qa | grep "$dnfpackages" > /dev/null 2>&1
         if [ $? -ne 0 ]; then
@@ -50,26 +50,23 @@ clear
 echo "download war file..."
 wget -q --show-progress https://downloads.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-$GUACAMOLE_VERSION.war
 
-sudo systemctl enable --now tomcat
-if sudo systemctl is-active tomcat | grep active; then
-    echo "tomcat service is active"
-fi
+systemctl enable --now tomcat
 
 echo "moving war file to tomcat webapps directory"
-sudo mv guacamole-$GUACAMOLE_VERSION.war /var/lib/tomcat/webapps/guacamole.war
+mv guacamole-$GUACAMOLE_VERSION.war /var/lib/tomcat/webapps/guacamole.war
 
-sudo mkdir -p /etc/guacamole/{extensions,lib}
+mkdir -p /etc/guacamole/{extensions,lib}
 
 # Note: Writes to a file named 'tomcat' in the current directory, then moves it.
 echo "GUACAMOLE_HOME=/etc/guacamole" >> ./tomcat && sudo mv tomcat /etc/default
 
-sudo touch /etc/guacamole/guacd.conf
-sudo systemctl enable --now mariadb
+touch /etc/guacamole/guacd.conf
+systemctl enable --now mariadb
 
 # Check if mysql root has a password.
 # Note: `if [ $? -gt 0 ]` means the login failed, which implies a password IS set or MySQL is not accessible.
 # The subsequent `echo` message is misleading.
-sudo mysql -u root -e "quit" &> /dev/null
+mysql -u root -e "quit" &> /dev/null
 if [ $? -gt 0 ]; then
     echo "you dont have password set for mysql" # This message is likely incorrect based on the condition.
     read -s -p "set the password for mysql so no one can access mysql database but you: " mysqlpassword
@@ -82,7 +79,7 @@ if [ $? -gt 0 ]; then
     mysql -e "DROP DATABASE test"
     mysql -e "FLUSH PRIVILEGES"
 
-    sudo mysql --user=root --password="$mysqlpassword" -e "CREATE DATABASE guacamole_db;"
+    mysql --user=root --password="$mysqlpassword" -e "CREATE DATABASE guacamole_db;"
 
     wget -q --show-progress -P ~/ https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
     tar -xf ~/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
