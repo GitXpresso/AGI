@@ -10,19 +10,22 @@ if [ $(id -u ) -gt 0 ]; then
     exit 1
 fi
 
+#!/bin/bash
+# No changes to this shebang or initial comments
+
 if [ -d /etc/dnf ]; then
-    packages=( "wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "tomcat" "tar" "mariadb-server" )
-    for dnfpackages in "$(packages[@])"; do
-        sudo rpm -qa | grep "$packages[@]" > /dev/null 2>&1
-        if [ $? -gt 0 ]; then
-            sudo dnf install -y "$packages[@]" 
-            sleep 0.5
-            clear
+    packages=("wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "tomcat")
+    for dnfpackages in "${packages[@]}"; do
+        rpm -qa | grep "$dnfpackages" > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+
+            echo "$dnfpackages is not installed"
+            sudo dnf install -y "$dnfpackages"
         else
-            installed2="Ok" 
-            echo "$packages[@] $installed2"
+            echo "$dnfpackages is installed"
         fi
     done
+fi
 
 if [ ! $(pwd) == "$HOME" ]; then
     cd $HOME # Quoting "$HOME" is safer: cd "$HOME"
