@@ -37,4 +37,6 @@ sudo systemctl enable --now tomcat
 if sudo systemctl is-active tomcat | grep active; then
    echo "tomcat service is active"
 fi
+echo "moving war file to tomcat webapps directory"
+sudo mv guacamole-$GUACAMOLE_VERSION.war /var/lib/tomcat/webapps/guacamole.war
 
