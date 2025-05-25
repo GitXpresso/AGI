@@ -108,4 +108,5 @@ guacd-port: 4822
 # Disable user input history
 #history-size: 0
 EOF
-
+sudo cp guacamole.properties /etc/guacamole/guacamole.properties
+sudo touch /etc/guacamole/guacd.conf
