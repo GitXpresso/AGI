@@ -39,4 +39,4 @@ if sudo systemctl is-active tomcat | grep active; then
 fi
 echo "moving war file to tomcat webapps directory"
 sudo mv guacamole-$GUACAMOLE_VERSION.war /var/lib/tomcat/webapps/guacamole.war
-
+sudo systemctl restart tomcat
