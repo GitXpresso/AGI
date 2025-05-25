@@ -23,7 +23,6 @@ if [ -d /etc/dnf ]; then
             echo "$packages[@] $installed2"
         fi
     done
-fi
 
 if [ ! $(pwd) == "$HOME" ]; then
     cd $HOME # Quoting "$HOME" is safer: cd "$HOME"
