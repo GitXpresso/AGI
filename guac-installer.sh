@@ -153,4 +153,6 @@ guacd-port: 4822
 #history-size: 0
 EOF
 sudo mv guacamole.properties.example ~/ && sudo cp ~/guacamole.properties.example /etc/guacamole/guacamole.properties
-echo "done"
+echo "restarting guacd and tomcat to apply the changes"
+sudo systemctl restart guacd
+sudo systemctl restart tomcat
