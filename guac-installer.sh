@@ -2,7 +2,7 @@
 GUACAMOLE_VERSION="1.5.5" 
 
 if [ -d /etc/dnf ]; then
-packages=("wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "tomcat" "tar")
+packages=("wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "tomcat" "tar" "mariadb-server")
 for dnfpackages in "$(packages[@])'; do
      sudo dnf list installed | grep "$packages[@]" > /dev/null 2>&1
      if [ $? -ne 0 ]; then
@@ -110,3 +110,4 @@ guacd-port: 4822
 EOF
 sudo cp guacamole.properties /etc/guacamole/guacamole.properties
 sudo touch /etc/guacamole/guacd.conf
+sudo systemctl enable --now mariadb
