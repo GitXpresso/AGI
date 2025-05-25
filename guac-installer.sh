@@ -22,7 +22,7 @@ if [ ! $( pwd ) == "$HOME" ]; then
 fi
 echo "Downloading tarball"
 wget -q --show-progress https://downloads.apache.org/guacamole/$GUACAMOLE_VERSION/source/guacamole-server-$GUACAMOLE_VERSION.tar.gz
-tar -xf guacamole-server-$GUACAMOLE_VERSION.tar.gz 
+tar -xf guacamole-server-$GUACAMOLE_VERSION.tar.gz f
 cd guacamole-server-$GUACAMOLE_VERSION
 echo "configuring..."
 ./configure --with-systemd-dir=/etc/systemd/system/ --disable-dependency-tracking
@@ -30,3 +30,11 @@ echo "running make commands"
 make
 sudo make install
 sudo ldconfig
+clear
+echo "download war file..."
+wget -q --show-progress https://downloads.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-$GUACAMOLE_VERSION.war
+sudo systemctl enable --now tomcat
+if sudo systemctl is-active tomcat | grep active; then
+   echo "tomcat service is active"
+fi
+
