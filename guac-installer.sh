@@ -111,3 +111,31 @@ EOF
 sudo cp guacamole.properties /etc/guacamole/guacamole.properties
 sudo touch /etc/guacamole/guacd.conf
 sudo systemctl enable --now mariadb
+sudo mysql -u root -e 'quit' &> /dev/null
+if [ $? -gt 0 ]; then
+    echo "you don't have a password set for mysql"
+    read -s -p "set the password for mysql so no one can access mysql database but you: " mysqlpassword
+    # set password for user=root
+    mysql -e "UPDATE mysql.user SET Password = PASSWORD('$mysqlpassword') WHERE User = 'root'"
+    # kills anonymous users
+    mysql -e "DROP USER ''@'localhost'"
+    # Because our hostname varies we'll use some Bash magic here.
+    mysql -e "DROP USER ''@'$(hostname)'"
+    mysql -e "DROP DATABASE test"
+    mysql -e "FLUSH PRIVILEGES"
+    mysql --user=root --password=$mysqlpassword -e "CREATE DATABASE guacamole_db;"
+    cd ~/guacamole-auth-jdbc-1.5.4/mysql; sudo cat schema/*.sql | mysql --user=root --password=$mysqlpassword -e 'guacamole_db'
+    mysql --user=root --password=$mysqlpassword -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+    read -p "set a password for the new mysql user 'guacamole_user': " mysqlguacpass
+    mysql --user=root --password=$mysqlpassword -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+else
+   echo "your mysql root password is probably the same as your password set for the root user"
+   read -s -p "enter your root user password: " $rootpassword
+   sudo mysql -e 
+   cd ~/guacamole-auth-jdbc-1.5.4/mysql; sudo cat schema/*.sql | mysql --user=root --password=$rootpassword guacamole_db
+   wget -q --show-progress -P ~/ https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
+   tar -xf ~/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
+fi
+   read -p "set a password for the new mysql user 'guacamole_user': " mysqlguacpass
+   mysql --user=root --password=$rootpassword -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+
