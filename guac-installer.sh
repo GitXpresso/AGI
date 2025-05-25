@@ -9,10 +9,10 @@ if [ $(id -u ) -gt 0 ]; then
     echo "run this script as root (use sudo)"
     exit 1
 fi
-
-#!/bin/bash
-# No changes to this shebang or initial comments
-
+if [ systemd-detect-virt --container | grep -q -o "docker"; then
+   echo "your in a container, exiting..."
+   exit 1
+fi
 if [ -d /etc/dnf ]; then
     packages=("wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "tomcat" "mariadb-server")
     for dnfpackages in "${packages[@]}"; do
