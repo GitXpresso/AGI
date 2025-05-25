@@ -5,7 +5,7 @@ GUACAMOLE_VERSION="1.5.5"
 # This initial check, as written, will likely cause the script to exit immediately
 # for both root and non-root users, because `[ $(id -u) ]` evaluates to true
 # if `id -u` outputs any non-empty string (which it always does).
-if [ $(id -u) ]; then
+if [ $(id -u ) -gt 0 ]; then
     echo "run this script as root (use sudo)"
     exit 1
 fi
