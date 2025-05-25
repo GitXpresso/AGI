@@ -1,7 +1,8 @@
 #!/bin/bash
-GUACAMOLE_VERSION="1.5.5"
+GUACAMOLE_VERSION="1.5.5" 
+
 if [ -d /etc/dnf ]; then
-packages=("wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "tomcat")
+packages=("wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "tomcat" "tar")
 for dnfpackages in "$(packages[@])'; do
      sudo dnf list installed | grep "$packages[@]" > /dev/null 2>&1
      if [ $? -ne 0 ]; then
@@ -16,4 +17,9 @@ for dnfpackages in "$(packages[@])'; do
      fi
 done
 fi
+if [ ! $( pwd ) == "$HOME" ]; then
+   cd $HOME
+fi
+echo "Downloading tarball"
 wget -q --show-progress https://downloads.apache.org/guacamole/$GUACAMOLE_VERSION/source/guacamole-server-$GUACAMOLE_VERSION.tar.gz
+tar -xvf guacamole-server-$GUACAMOLE_VERSION.tar.gz 
