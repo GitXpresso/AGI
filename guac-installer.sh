@@ -14,9 +14,7 @@ if [ -d /etc/dnf ]; then
     packages=( "wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "tomcat" "tar" "mariadb-server" )
     for dnfpackages in "$(packages[@])"; do
         sudo dnf list installed | grep "$packages[@]" > /dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            installed="No" 
-            echo "$packages[@] installed [$Installed]"
+        if [ $? -gt 0 ]; then
             sudo dnf install -y "$packages[@]" 
             sleep 0.5
             clear
@@ -211,3 +209,4 @@ sudo mv guacamole.properties.example ~/ && sudo cp ~/guacamole.properties.exampl
 echo "restarting guacd and tomcat to apply the changes"
 sudo systemctl restart guacd
 sudo systemctl restart tomcat
+fi
