@@ -124,18 +124,26 @@ if [ $? -gt 0 ]; then
     mysql -e "DROP DATABASE test"
     mysql -e "FLUSH PRIVILEGES"
     mysql --user=root --password=$mysqlpassword -e "CREATE DATABASE guacamole_db;"
+    wget -q --show-progress -P ~/ https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
+    tar -xf ~/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
     cd ~/guacamole-auth-jdbc-1.5.4/mysql; sudo cat schema/*.sql | mysql --user=root --password=$mysqlpassword -e 'guacamole_db'
     mysql --user=root --password=$mysqlpassword -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
-    read -p "set a password for the new mysql user 'guacamole_user': " mysqlguacpass
+    read -s -p  "set a password for the new mysql user 'guacamole_user': " mysqlguacpass
     mysql --user=root --password=$mysqlpassword -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
 else
    echo "your mysql root password is probably the same as your password set for the root user"
-   read -s -p "enter your root user password: " $rootpassword
-   sudo mysql -e 
-   cd ~/guacamole-auth-jdbc-1.5.4/mysql; sudo cat schema/*.sql | mysql --user=root --password=$rootpassword guacamole_db
+   read -s -p "enter the password set for the root user: " $rootpassword
+    # kills anonymous users
+   mysql -e "DROP USER ''@'localhost'"
+   # Because our hostname varies we'll use some Bash magic here.
+   mysql -e "DROP USER ''@'$(hostname)'"
+   mysql -e "DROP DATABASE test"
+   mysql -e "FLUSH PRIVILEGES"
    wget -q --show-progress -P ~/ https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
    tar -xf ~/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
-fi
-   read -p "set a password for the new mysql user 'guacamole_user': " mysqlguacpass
+   cd ~/guacamole-auth-jdbc-1.5.4/mysql; sudo cat schema/*.sql | mysql --user=root --password=$rootpassword -e 'guacamole_db'
+   read -s -p "set a password for the new mysql user 'guacamole_user': " mysqlguacpass
    mysql --user=root --password=$rootpassword -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+fi
+  
 
