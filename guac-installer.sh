@@ -154,6 +154,13 @@ fi
 if [ ! -f guacamole-auth-jdbc-mysql-$GUCAMOLE_VERSION.jar ]; then
  sudo cp guacamole-auth-jdbc-mysql-$GUCAMOLE_VERSION.jar /etc/guacamole/extensions/
 fi
+
+if [ ! $( rpm -qa | grep -o mysql-connector) ]; then
+sudo dnf install https://cdn.mysql.com/archives/mysql-connector-java-8.2/mysql-connector-j-8.2.0-1.fc37.noarch.rpm
+fi
+if [ ! -f /etc/guacamole/lib/mysql-connector-java.jar ]; then
+  sudo cp /usr/share/java/mysql-connector-java.jar /etc/guacamole/lib/mysql-connector.jar
+fi
 echo "[server]" | sudo tee /etc/guacamole/guacd.conf > /dev/null # Overwrite or create
 echo "bind_host = 0.0.0.0" | sudo tee -a /etc/guacamole/guacd.conf > /dev/null
 echo "bind_port = 4822" | sudo tee -a /etc/guacamole/guacd.conf > /dev/null
