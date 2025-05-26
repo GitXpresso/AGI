@@ -54,13 +54,13 @@ echo "download war file..."
 if [ ! -f $HOME/guacamole-$GUACAMOLE_VERSION.war ]; then
 wget -P $HOME -q --show-progress -O guacamole-$GUACAMOLE_VERSION.war https://apache.org/dyn/closer.lua/guacamole/$GUACAMOLE_VERSION/binary/guacamole-$GUACAMOLE_VERSION.war?action=download
 fi
-if ! $(rpm -qa | grep -q -o "tomcat"); then
+if ! $(rpm -qa | grep -q -o "tomcat-lib"); then
    sudo dnf install tomcat
 fi
 sudo systemctl enable --now tomcat
 
 echo "moving war file to tomcat webapps directory"
-sudo mv guacamole-$GUACAMOLE_VERSION.war /var/lib/tomcat/webapps/guacamole.war
+sudo mv $HOME/guacamole-$GUACAMOLE_VERSION.war /var/lib/tomcat/webapps/guacamole.war
 
 sudo mkdir -p /etc/guacamole/{extensions,lib}
 
