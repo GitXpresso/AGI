@@ -50,9 +50,9 @@ clear
 echo "download war file..."
 #wget -q --show-progress https://downloads.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-$GUACAMOLE_VERSION.war
 if [ ! -f $HOME/guacamole-$GUACAMOLE_VERSION.war ]; then
-wget -q --show-progress -o guacamole-$GUACAMOLE_VERSION.war https://apache.org/dyn/closer.lua/guacamole/$GUACAMOLE_VERSION/binary/guacamole-$GUACAMOLE_VERSION.war?action=download
+wget -P $HOME -q --show-progress -o guacamole-$GUACAMOLE_VERSION.war https://apache.org/dyn/closer.lua/guacamole/$GUACAMOLE_VERSION/binary/guacamole-$GUACAMOLE_VERSION.war?action=download
 fi
-if [ ! rpm -qa | grep -q -o "tomcat" ]; then
+if ! $(rpm -qa | grep -q -o "tomcat"); then
    sudo dnf install tomcat
 fi
 systemctl enable --now tomcat
