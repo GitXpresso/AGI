@@ -57,18 +57,18 @@ fi
 if ! $(rpm -qa | grep -q -o "tomcat"); then
    sudo dnf install tomcat
 fi
-systemctl enable --now tomcat
+sudo systemctl enable --now tomcat
 
 echo "moving war file to tomcat webapps directory"
-mv guacamole-$GUACAMOLE_VERSION.war /var/lib/tomcat/webapps/guacamole.war
+sudo mv guacamole-$GUACAMOLE_VERSION.war /var/lib/tomcat/webapps/guacamole.war
 
-mkdir -p /etc/guacamole/{extensions,lib}
+sudo mkdir -p /etc/guacamole/{extensions,lib}
 
 # Note: Writes to a file named 'tomcat' in the current directory, then moves it.
 echo "GUACAMOLE_HOME=/etc/guacamole" >> ./tomcat && sudo mv tomcat /etc/default
 
-touch /etc/guacamole/guacd.conf
-systemctl enable --now mariadb
+sudo touch /etc/guacamole/guacd.conf
+sudo systemctl enable --now mariadb
 
 # Check if mysql root has a password.
 mysql -u root -e "QUIT" &> /dev/null
@@ -77,21 +77,10 @@ if [ $? -gt 0 ]; then
     echo "Attempting to set/reset MySQL root password."
     read -s -p "Enter a NEW password for the MySQL 'root'@'localhost' user: " mysqlpassword
     echo # Newline after read -s
-
-    # Attempt to set root password. This assumes `mysql -u root` (no current password) can do this,
-    # or that `sudo` is used for the script and `mysql` client can leverage it (unlikely without `sudo mysql`).
-    # For a fresh MariaDB install, `sudo mysql -e "..."` is often needed for the very first password set.
-    # If this script is run as root, `mysql -e` might use root's socket auth if configured.
-    
-    # Using modern syntax. `PASSWORD()` is deprecated.
-    # These commands are run as the user executing the script (root). If MariaDB socket auth is enabled for root, this will work.
-    # If not, and root truly has no password, then `mysql -u root -e ...` would be needed.
-    # Given the script is run as root, `mysql -e` without `-u` implies system root.
     sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${mysqlpassword}';"
     if [ $? -ne 0 ]; then
         echo "Failed to set MySQL root password. Manual intervention might be required."
         echo "Attempting to proceed, but further MySQL operations might fail if root password wasn't set."
-        # It might be better to exit here if this fails.
     fi
     sudo mysql -u root -p"${mysqlpassword}" -e "DROP USER IF EXISTS ''@'localhost';"
     sudo mysql -u root -p"${mysqlpassword}" -e "DROP USER IF EXISTS ''@'$(hostname)';"
@@ -100,13 +89,10 @@ if [ $? -gt 0 ]; then
 
     sudo mysql -u root -p"${mysqlpassword}" -e "CREATE DATABASE IF NOT EXISTS guacamole_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-    # Downloads to WORK_DIR
-    wget -q --show-progress -P "$WORK_DIR" "https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz"
-    tar -xf "$WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz" -C "$WORK_DIR"
+    wget -q --show-progress -P $HOME "https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz"
+    tar -xf $HOME/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz -C ~/
 
-    cd "$WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql" || exit 1
-    # Corrected schema import: provide database name directly, not with -e
-    sudo cat schema/*.sql | sudo mysql -u root -p"${mysqlpassword}" guacamole_db
+    cd $HOME/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql; sudo cat schema/*.sql | sudo mysql -u root -p"${mysqlpassword}" guacamole_db
 
     # Read password *before* using it
     read -s -p "Set a password for the new MySQL user 'guacamole_user': " mysqlguacpass
