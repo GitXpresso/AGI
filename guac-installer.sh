@@ -48,7 +48,9 @@ clear
 
 echo "download war file..."
 wget -q --show-progress https://downloads.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-$GUACAMOLE_VERSION.war
-
+if [ ! rpm -qa | grep -q -o "tomcat" ]; then
+   sudo dnf install tomcat
+fi
 systemctl enable --now tomcat
 
 echo "moving war file to tomcat webapps directory"
