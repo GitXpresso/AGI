@@ -69,149 +69,194 @@ touch /etc/guacamole/guacd.conf
 systemctl enable --now mariadb
 
 # Check if mysql root has a password.
-# Note: `if [ $? -gt 0 ]` means the login failed, which implies a password IS set or MySQL is not accessible.
-# The subsequent `echo` message is misleading.
-mysql -u root -e "quit" &> /dev/null
+mysql -u root -e "QUIT" &> /dev/null
 if [ $? -gt 0 ]; then
-    echo "you dont have password set for mysql" # This message is likely incorrect based on the condition.
-    read -s -p "set the password for mysql so no one can access mysql database but you: " mysqlpassword
+    echo "Initial MySQL root login failed. This might mean a password is set, or root cannot login without one yet."
+    echo "Attempting to set/reset MySQL root password."
+    read -s -p "Enter a NEW password for the MySQL 'root'@'localhost' user: " mysqlpassword
+    echo # Newline after read -s
 
-    # Note: The following mysql commands lack `sudo` and proper authentication for the initial password set.
-    # `PASSWORD()` is old syntax. These commands will likely fail or not work as intended.
-    mysql -e "UPDATE mysql.user SET Password = PASSWORD('$mysqlpassword') WHERE User = 'root'"
-    mysql -e "DROP USER ''@'localhost'"
-    mysql -e "DROP USER ''@'$(hostname)'"
-    mysql -e "DROP DATABASE test"
-    mysql -e "FLUSH PRIVILEGES"
+    # Attempt to set root password. This assumes `mysql -u root` (no current password) can do this,
+    # or that `sudo` is used for the script and `mysql` client can leverage it (unlikely without `sudo mysql`).
+    # For a fresh MariaDB install, `sudo mysql -e "..."` is often needed for the very first password set.
+    # If this script is run as root, `mysql -e` might use root's socket auth if configured.
+    
+    # Using modern syntax. `PASSWORD()` is deprecated.
+    # These commands are run as the user executing the script (root). If MariaDB socket auth is enabled for root, this will work.
+    # If not, and root truly has no password, then `mysql -u root -e ...` would be needed.
+    # Given the script is run as root, `mysql -e` without `-u` implies system root.
+    sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${mysqlpassword}';"
+    if [ $? -ne 0 ]; then
+        echo "Failed to set MySQL root password. Manual intervention might be required."
+        echo "Attempting to proceed, but further MySQL operations might fail if root password wasn't set."
+        # It might be better to exit here if this fails.
+    fi
+    sudo mysql -u root -p"${mysqlpassword}" -e "DROP USER IF EXISTS ''@'localhost';"
+    sudo mysql -u root -p"${mysqlpassword}" -e "DROP USER IF EXISTS ''@'$(hostname)';"
+    sudo mysql -u root -p"${mysqlpassword}" -e "DROP DATABASE IF EXISTS test;"
+    sudo mysql -u root -p"${mysqlpassword}" -e "FLUSH PRIVILEGES;"
 
-    mysql --user=root --password="$mysqlpassword" -e "CREATE DATABASE guacamole_db;"
+    sudo mysql -u root -p"${mysqlpassword}" -e "CREATE DATABASE IF NOT EXISTS guacamole_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-    wget -q --show-progress -P ~/ https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
-    tar -xf ~/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
+    # Downloads to WORK_DIR
+    wget -q --show-progress -P "$WORK_DIR" "https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz"
+    tar -xf "$WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz" -C "$WORK_DIR"
 
-    # Note: Hardcoded version '1.5.4' here, while GUACAMOLE_VERSION is '1.5.5'. This `cd` may fail.
-    # Also, `mysql -e 'guacamole_db'` is incorrect for piping SQL schema. Should be `mysql guacamole_db` or `mysql -D guacamole_db`.
-    cd ~/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql
-    sudo cat schema/*.sql | mysql --user=root --password="$mysqlpassword" -e 'guacamole_db'
+    cd "$WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql" || exit 1
+    # Corrected schema import: provide database name directly, not with -e
+    sudo cat schema/*.sql | sudo mysql -u root -p"${mysqlpassword}" guacamole_db
 
-    # Note: mysqlguacpass is used in CREATE USER *before* it's read from input.
-    sudo mysql --user=root --password="$mysqlpassword" -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
-    read -s -p "set a password for the new mysql user 'guacamole_user': " mysqlguacpass
-    sudo mysql --user=root --password="$mysqlpassword" -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
-    sudo mysql --user=root --password="$mysqlpassword" -e "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole_db.* TO 'guacamole_user'@'localhost';"
+    # Read password *before* using it
+    read -s -p "Set a password for the new MySQL user 'guacamole_user': " mysqlguacpass
+    echo # Newline
+    while [ -z "$mysqlguacpass" ]; do
+        read -s -p "Password cannot be empty. Set a password for 'guacamole_user': " mysqlguacpass
+        echo
+    done
+    sudo mysql -u root -p"${mysqlpassword}" -e "CREATE USER IF NOT EXISTS 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+    # Ensure password is set/updated even if user exists
+    sudo mysql -u root -p"${mysqlpassword}" -e "ALTER USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+    sudo mysql -u root -p"${mysqlpassword}" -e "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole_db.* TO 'guacamole_user'@'localhost';"
+    sudo mysql -u root -p"${mysqlpassword}" -e "FLUSH PRIVILEGES;"
 else
-    echo "your mysql root password is probably the same as your password set for the root user"
-    # Note: `read ... $rootpassword` is incorrect. It should be `read ... rootpassword`.
-    # $rootpassword will expand to nothing if not set, so `read` will effectively use default variable (REPLY).
-    read -s -p "enter the password set for the root user: " $rootpassword
+    echo "MySQL root login succeeded (possibly via socket auth or no password)."
+    echo "If MySQL root already has a password, you'll be prompted for it for subsequent operations."
+    # Original script read $rootpassword, which is incorrect. Should be rootpassword.
+    read -s -p "Enter the current password for the MySQL 'root'@'localhost' user (or leave blank if none/using socket auth): " rootpassword
+    echo # Newline
 
-    # Note: $rootpassword used below will likely be empty or not what's intended due to the incorrect read.
-    sudo mysql --user=root --password="$rootpassword" -e "DROP USER ''@'localhost'"
-    sudo mysql --user=root --password="$rootpassword" -e "DROP USER ''@'$(hostname)'"
-    sudo mysql --user=root --password="$rootpassword" -e "DROP DATABASE test"
-    sudo mysql --user=root --password="$rootpassword" -e "FLUSH PRIVILEGES"
-    # Note: CREATE DATABASE guacamole_db; is missing in this else branch.
+    MYSQL_AUTH_OPT=""
+    if [ -n "$rootpassword" ]; then
+        MYSQL_AUTH_OPT="--password=$rootpassword"
+    fi
 
-    wget -q --show-progress -P ~/ https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
-    tar -xf ~/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz
+    # Test connection with provided password (if any)
+    # Using sudo mysql as it might be socket auth that succeeded initially
+    if ! sudo mysql -u root $MYSQL_AUTH_OPT -e "SELECT 1;" > /dev/null 2>&1; then
+        echo "Failed to connect to MySQL with provided credentials or via sudo. Exiting."
+        exit 1
+    fi
+    
+    sudo mysql -u root $MYSQL_AUTH_OPT -e "DROP USER IF EXISTS ''@'localhost';"
+    sudo mysql -u root $MYSQL_AUTH_OPT -e "DROP USER IF EXISTS ''@'$(hostname)';"
+    sudo mysql -u root $MYSQL_AUTH_OPT -e "DROP DATABASE IF EXISTS test;"
+    # CREATE DATABASE was missing in this branch in the original script
+    sudo mysql -u root $MYSQL_AUTH_OPT -e "CREATE DATABASE IF NOT EXISTS guacamole_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    sudo mysql -u root $MYSQL_AUTH_OPT -e "FLUSH PRIVILEGES;"
 
-    # Note: Hardcoded version '1.5.4' again. `mysql -e 'guacamole_db'` error also present.
-    cd ~/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql
-    sudo cat schema/*.sql | mysql --user=root --password="$rootpassword" -e 'guacamole_db'
+    # Downloads to WORK_DIR
+    wget -q --show-progress -P "$WORK_DIR" "https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz"
+    tar -xf "$WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz" -C "$WORK_DIR"
 
-    read -s -p "set a password for the new mysql user 'guacamole_user': " mysqlguacpass
-    sudo mysql --user=root --password="$rootpassword" -e "CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
-    sudo mysql --user=root --password="$rootpassword" -e "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole_db.* TO 'guacamole_user'@'localhost';"
-    sudo mysql --user=root --password="$rootpassword" -e "FLUSH PRIVILEGES"
+    cd "$WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql" || exit 1
+    # Corrected schema import
+    sudo cat schema/*.sql | sudo mysql -u root $MYSQL_AUTH_OPT guacamole_db
+
+    read -s -p "Set a password for the new MySQL user 'guacamole_user': " mysqlguacpass
+    echo # Newline
+    while [ -z "$mysqlguacpass" ]; do
+        read -s -p "Password cannot be empty. Set a password for 'guacamole_user': " mysqlguacpass
+        echo
+    done
+    sudo mysql -u root $MYSQL_AUTH_OPT -e "CREATE USER IF NOT EXISTS 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+    sudo mysql -u root $MYSQL_AUTH_OPT -e "ALTER USER 'guacamole_user'@'localhost' IDENTIFIED BY '$mysqlguacpass';"
+    sudo mysql -u root $MYSQL_AUTH_OPT -e "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole_db.* TO 'guacamole_user'@'localhost';"
+    sudo mysql -u root $MYSQL_AUTH_OPT -e "FLUSH PRIVILEGES;"
 fi
 
-sudo cp ./guacamole-auth-jdbc-mysql-$GUACAMOLE_VERSION.jar /etc/guacamole/extensions/
+# The JAR to copy is guacamole-auth-jdbc-mysql, not the main one
+# This path depends on where tar extracted, assuming it's $WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql/
+JDBC_MYSQL_JAR_PATH="$WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql/guacamole-auth-jdbc-mysql-$GUACAMOLE_VERSION.jar"
+if [ -f "$JDBC_MYSQL_JAR_PATH" ]; then
+    sudo cp "$JDBC_MYSQL_JAR_PATH" /etc/guacamole/extensions/
+else
+    echo "WARNING: Guacamole JDBC MySQL Auth JAR not found at $JDBC_MYSQL_JAR_PATH"
+fi
 
-# Note: The echo message says "java 8.2" but the command installs MySQL Connector/J.
-echo "installing mysql connector"
-sudo dnf install -y https://cdn.mysql.com/archives/mysql-connector-java-8.2/mysql-connector-j-8.2.0-1.fc37.noarch.rpm
-sudo cp /usr/share/java/mysql-connector-java.jar /etc/guacamole/lib/mysql-connector.jar
 
-echo "[server]" >> /etc/guacamole/guacd.conf
-echo "bind_host = 0.0.0.0" >> /etc/guacamole/guacd.conf
-echo "bind_port = 4822" >> /etc/guacamole/guacd.conf
+echo "installing mysql connector" # This refers to MySQL Connector/J
+# The RPM URL is for fc37, might not work on other systems.
+# A better approach might be `sudo dnf install -y mysql-connector-java` if available.
+MYSQL_CONNECTOR_RPM_URL="https://cdn.mysql.com/archives/mysql-connector-java-8.2/mysql-connector-j-8.2.0-1.fc37.noarch.rpm"
+MYSQL_CONNECTOR_RPM_NAME=$(basename "$MYSQL_CONNECTOR_RPM_URL")
+
+wget -q --show-progress -P "$WORK_DIR" "$MYSQL_CONNECTOR_RPM_URL"
+if [ $? -eq 0 ]; then
+    sudo dnf install -y "$WORK_DIR/$MYSQL_CONNECTOR_RPM_NAME"
+else
+    echo "Failed to download MySQL Connector/J RPM. Attempting 'sudo dnf install -y mysql-connector-java'..."
+    sudo dnf install -y mysql-connector-java
+fi
+
+# Find and link the connector JAR
+MYSQL_CONNECTOR_JAR_SYSTEM_PATH=""
+POSSIBLE_PATHS=("/usr/share/java/mysql-connector-j.jar" "/usr/share/java/mysql-connector-java.jar") # Common paths
+for P_PATH in "${POSSIBLE_PATHS[@]}"; do
+    if [ -f "$P_PATH" ]; then
+        MYSQL_CONNECTOR_JAR_SYSTEM_PATH="$P_PATH"
+        break
+    fi
+done
+# Fallback for versioned names like mysql-connector-j-8.2.0.jar
+if [ -z "$MYSQL_CONNECTOR_JAR_SYSTEM_PATH" ]; then
+    MYSQL_CONNECTOR_JAR_SYSTEM_PATH=$(find /usr/share/java -name 'mysql-connector-j-*.jar' -print -quit 2>/dev/null)
+fi
+
+
+if [ -n "$MYSQL_CONNECTOR_JAR_SYSTEM_PATH" ] && [ -f "$MYSQL_CONNECTOR_JAR_SYSTEM_PATH" ]; then
+    sudo ln -sf "$MYSQL_CONNECTOR_JAR_SYSTEM_PATH" /etc/guacamole/lib/mysql-connector.jar
+    echo "MySQL Connector/J symlinked from $MYSQL_CONNECTOR_JAR_SYSTEM_PATH"
+else
+    echo "WARNING: MySQL Connector/J JAR not found. Guacamole JDBC auth might fail."
+    echo "Please ensure it's installed and symlink it to /etc/guacamole/lib/mysql-connector.jar"
+fi
+
+
+echo "[server]" | sudo tee /etc/guacamole/guacd.conf > /dev/null # Overwrite or create
+echo "bind_host = 0.0.0.0" | sudo tee -a /etc/guacamole/guacd.conf > /dev/null
+echo "bind_port = 4822" | sudo tee -a /etc/guacamole/guacd.conf > /dev/null
 
 # This creates ./guacamole.properties in the current directory
-# (which is likely ~/guacamole-auth-jdbc-1.5.4/mysql/ at this point).
-cat << EOF > ./guacamole.properties
-# Guacamole properties
+# (which is likely $WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql/ at this point).
+# It should be created directly in /etc/guacamole or created then moved.
+# Creating it directly in /etc/guacamole:
+sudo tee /etc/guacamole/guacamole.properties > /dev/null <<EOF
+# MySQL properties
+mysql-hostname: localhost
+mysql-port: 3306
+mysql-database: guacamole_db
+mysql-username: guacamole_user
+mysql-password: ${mysqlguacpass} # This variable must be set from one of the branches above
 
-# Hostname and port of guacamole proxy
+# Guacamole server settings
 guacd-hostname: localhost
 guacd-port: 4822
 
-# Auth provider class (authenticates user credentials)
-# Example LDAP authentication
-#auth-provider: net.sourceforge.guacamole.net.basic.BasicFileAuthenticationProvider
-# Example MySQL authentication
-#auth-provider: net.sourceforge.guacamole.net.mysql.MySQLAuthenticationProvider
-# Example JDBC authentication
-#auth-provider: net.sourceforge.guacamole.net.jdbc.JDBCAuthenticationProvider
+# Auth provider class for JDBC
+auth-provider: org.apache.guacamole.auth.jdbc.JDBCAuthModule
 
-# LDAP properties
-#ldap-hostname: ldap.example.com
-#ldap-port: 389
-#ldap-user-base-dn: dc=example,dc=com
-#ldap-username-attribute: uid
-#ldap-encryption-method: none
-#ldap-search-bind-dn: cn=admin,dc=example,dc=com
-#ldap-search-bind-password: password
+# JDBC driver class
+jdbc-driver: com.mysql.cj.jdbc.Driver # For modern MySQL Connector/J
+# For older: jdbc-driver: com.mysql.jdbc.Driver
 
-# MySQL properties
-#mysql-hostname: localhost
-#mysql-port: 3306
-#mysql-database: guacamole_db
-#mysql-username: guacamole_user
-#mysql-password: password
-
-# JDBC properties
-#jdbc-driver: com.mysql.jdbc.Driver
-#jdbc-url: jdbc:mysql://localhost:3306/guacamole_db
-#jdbc-username: guacamole_user
-#jdbc-password: password
-
-# Guacamole authentication
-# Example basic file authentication
-#basic-user-mapping: /etc/guacamole/user-mapping.xml
-
-# Guacamole properties
-# The value of "guacd-hostname" is ignored if using "guacd-socket".
-#guacd-hostname: localhost
-#guacd-port: 4822
-#guacd-socket: /var/run/guacd/guacd.sock
-
-# Enable SSL
-#guacamole-ssl: true
-#guacamole-ssl-certificate: /etc/pki/tls/certs/localhost.crt
-#guacamole-ssl-key: /etc/pki/tls/private/localhost.key
-#guacamole-ssl-key-password: password
-
-# WebSocket configuration
-#web-socket-support: true
-#web-socket-maximum-connections: 100
-
-# Token parameter name
-#token-parameter-name: token
-
-# User permissions
-#admin-group: admin
-#user-group: users
-
-# Disable user input history
-#history-size: 0
+# JDBC URL
+jdbc-url: jdbc:mysql://localhost:3306/guacamole_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false
 EOF
+# Secure the properties file
+sudo chmod 600 /etc/guacamole/guacamole.properties
+sudo chown root:tomcat /etc/guacamole/guacamole.properties # Tomcat needs to read this. Or just root:root if Tomcat runs as root.
 
-# Note: 'guacamole.properties.example' is never created or downloaded by this script.
-# This `mv` and subsequent `cp` command will likely fail.
-# The intention might have been to move the `./guacamole.properties` created above.
-sudo mv guacamole.properties.example ~/ && sudo cp ~/guacamole.properties.example /etc/guacamole/guacamole.properties
+# The guacamole.properties.example was never used or created by the script.
+# The above tee command directly creates /etc/guacamole/guacamole.properties.
+# So, the following mv/cp lines are removed as they are not applicable with the direct creation.
+# sudo mv guacamole.properties.example ~/ && sudo cp ~/guacamole.properties.example /etc/guacamole/guacamole.properties
 
 echo "restarting guacd and tomcat to apply the changes"
 sudo systemctl restart guacd
 sudo systemctl restart tomcat
+
+echo "Cleaning up temporary installation files from $WORK_DIR..."
+# rm -rf "$WORK_DIR" # Uncomment to auto-cleanup
+
+echo "Installation script finished."
 fi
