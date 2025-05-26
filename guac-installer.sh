@@ -51,8 +51,11 @@ clear
 
 echo "download war file..."
 #wget -q --show-progress https://downloads.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-$GUACAMOLE_VERSION.war
+currentworkingdir=$(pwd)
 if [ ! -f $HOME/guacamole-$GUACAMOLE_VERSION.war ]; then
-wget -P $HOME -q --show-progress -O guacamole-$GUACAMOLE_VERSION.war https://apache.org/dyn/closer.lua/guacamole/$GUACAMOLE_VERSION/binary/guacamole-$GUACAMOLE_VERSION.war?action=download
+cd $HOME
+wget -q --show-progress -O guacamole-$GUACAMOLE_VERSION.war https://apache.org/dyn/closer.lua/guacamole/$GUACAMOLE_VERSION/binary/guacamole-$GUACAMOLE_VERSION.war?action=download
+cd $currentworkingdir
 fi
 if ! $(rpm -qa | grep -q -o "tomcat-lib"); then
    sudo dnf install tomcat
