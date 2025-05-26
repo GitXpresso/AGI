@@ -151,55 +151,9 @@ else
     sudo mysql -u root $MYSQL_AUTH_OPT -e "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole_db.* TO 'guacamole_user'@'localhost';"
     sudo mysql -u root $MYSQL_AUTH_OPT -e "FLUSH PRIVILEGES;"
 fi
-
-# The JAR to copy is guacamole-auth-jdbc-mysql, not the main one
-# This path depends on where tar extracted, assuming it's $HOME/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql/
-JDBC_MYSQL_JAR_PATH="$HOME/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql/guacamole-auth-jdbc-mysql-$GUACAMOLE_VERSION.jar"
-if [ -f "$JDBC_MYSQL_JAR_PATH" ]; then
-    sudo cp "$JDBC_MYSQL_JAR_PATH" /etc/guacamole/extensions/
-else
-    echo "WARNING: Guacamole JDBC MySQL Auth JAR not found at $JDBC_MYSQL_JAR_PATH"
+if [ ! -f guacamole-auth-jdbc-mysql-$GUCAMOLE_VERSION.jar ]; then
+ sudo cp guacamole-auth-jdbc-mysql-$GUCAMOLE_VERSION.jar /etc/guacamole/extensions/
 fi
-
-
-echo "installing mysql connector" # This refers to MySQL Connector/J
-# The RPM URL is for fc37, might not work on other systems.
-# A better approach might be `sudo dnf install -y mysql-connector-java` if available.
-MYSQL_CONNECTOR_RPM_URL="https://cdn.mysql.com/archives/mysql-connector-java-8.2/mysql-connector-j-8.2.0-1.fc37.noarch.rpm"
-MYSQL_CONNECTOR_RPM_NAME=$(basename "$MYSQL_CONNECTOR_RPM_URL")
-
-wget -q --show-progress -P "$HOME" "$MYSQL_CONNECTOR_RPM_URL"
-if [ $? -eq 0 ]; then
-    sudo dnf install -y "$HOME/$MYSQL_CONNECTOR_RPM_NAME"
-else
-    echo "Failed to download MySQL Connector/J RPM. Attempting 'sudo dnf install -y mysql-connector-java'..."
-    sudo dnf install -y mysql-connector-java
-fi
-
-# Find and link the connector JAR
-MYSQL_CONNECTOR_JAR_SYSTEM_PATH=""
-POSSIBLE_PATHS=("/usr/share/java/mysql-connector-j.jar" "/usr/share/java/mysql-connector-java.jar") # Common paths
-for P_PATH in "${POSSIBLE_PATHS[@]}"; do
-    if [ -f "$P_PATH" ]; then
-        MYSQL_CONNECTOR_JAR_SYSTEM_PATH="$P_PATH"
-        break
-    fi
-done
-# Fallback for versioned names like mysql-connector-j-8.2.0.jar
-if [ -z "$MYSQL_CONNECTOR_JAR_SYSTEM_PATH" ]; then
-    MYSQL_CONNECTOR_JAR_SYSTEM_PATH=$(find /usr/share/java -name 'mysql-connector-j-*.jar' -print -quit 2>/dev/null)
-fi
-
-
-if [ -n "$MYSQL_CONNECTOR_JAR_SYSTEM_PATH" ] && [ -f "$MYSQL_CONNECTOR_JAR_SYSTEM_PATH" ]; then
-    sudo ln -sf "$MYSQL_CONNECTOR_JAR_SYSTEM_PATH" /etc/guacamole/lib/mysql-connector.jar
-    echo "MySQL Connector/J symlinked from $MYSQL_CONNECTOR_JAR_SYSTEM_PATH"
-else
-    echo "WARNING: MySQL Connector/J JAR not found. Guacamole JDBC auth might fail."
-    echo "Please ensure it's installed and symlink it to /etc/guacamole/lib/mysql-connector.jar"
-fi
-
-
 echo "[server]" | sudo tee /etc/guacamole/guacd.conf > /dev/null # Overwrite or create
 echo "bind_host = 0.0.0.0" | sudo tee -a /etc/guacamole/guacd.conf > /dev/null
 echo "bind_port = 4822" | sudo tee -a /etc/guacamole/guacd.conf > /dev/null
