@@ -35,9 +35,9 @@ echo "Downloading tarball"
 wget -q --show-progress -o guacamole-server-$GUACAMOLE_VERSION.tar.gz https://apache.org/dyn/closer.lua/guacamole/1.5.5/source/guacamole-server-$GUACAMOLE_VERSION.tar.gz?action=download
 
 tar -xf guacamole-server-$GUACAMOLE_VERSION.tar.gz 
-
+if [ ! $(pwd) == $HOME/guacamole-server-$GUACAMOLE_VERSION ]; then
 cd guacamole-server-$GUACAMOLE_VERSION
-
+fi
 echo "configuring..."
 ./configure --with-systemd-dir=/etc/systemd/system/ --disable-dependency-tracking
 echo "running make commands"
