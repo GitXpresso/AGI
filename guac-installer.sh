@@ -133,10 +133,10 @@ else
     sudo mysql -u root $MYSQL_AUTH_OPT -e "FLUSH PRIVILEGES;"
 
     # Downloads to WORK_DIR
-    wget -q --show-progress -P "$WORK_DIR" "https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz"
-    tar -xf "$WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz" -C "$WORK_DIR"
+    wget -q --show-progress -P "$HOME" "https://dlcdn.apache.org/guacamole/$GUACAMOLE_VERSION/binary/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz"
+    tar -xf $HOME/guacamole-auth-jdbc-$GUACAMOLE_VERSION.tar.gz -C $HOME
 
-    cd "$WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql" || exit 1
+    cd $HOME/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql; sudo cat schema/*.sql | sudo mysql -u root $MYSQL_AUTH_OPT guacamole_db
     # Corrected schema import
     sudo cat schema/*.sql | sudo mysql -u root $MYSQL_AUTH_OPT guacamole_db
 
@@ -153,8 +153,8 @@ else
 fi
 
 # The JAR to copy is guacamole-auth-jdbc-mysql, not the main one
-# This path depends on where tar extracted, assuming it's $WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql/
-JDBC_MYSQL_JAR_PATH="$WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql/guacamole-auth-jdbc-mysql-$GUACAMOLE_VERSION.jar"
+# This path depends on where tar extracted, assuming it's $HOME/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql/
+JDBC_MYSQL_JAR_PATH="$HOME/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql/guacamole-auth-jdbc-mysql-$GUACAMOLE_VERSION.jar"
 if [ -f "$JDBC_MYSQL_JAR_PATH" ]; then
     sudo cp "$JDBC_MYSQL_JAR_PATH" /etc/guacamole/extensions/
 else
@@ -168,9 +168,9 @@ echo "installing mysql connector" # This refers to MySQL Connector/J
 MYSQL_CONNECTOR_RPM_URL="https://cdn.mysql.com/archives/mysql-connector-java-8.2/mysql-connector-j-8.2.0-1.fc37.noarch.rpm"
 MYSQL_CONNECTOR_RPM_NAME=$(basename "$MYSQL_CONNECTOR_RPM_URL")
 
-wget -q --show-progress -P "$WORK_DIR" "$MYSQL_CONNECTOR_RPM_URL"
+wget -q --show-progress -P "$HOME" "$MYSQL_CONNECTOR_RPM_URL"
 if [ $? -eq 0 ]; then
-    sudo dnf install -y "$WORK_DIR/$MYSQL_CONNECTOR_RPM_NAME"
+    sudo dnf install -y "$HOME/$MYSQL_CONNECTOR_RPM_NAME"
 else
     echo "Failed to download MySQL Connector/J RPM. Attempting 'sudo dnf install -y mysql-connector-java'..."
     sudo dnf install -y mysql-connector-java
@@ -205,7 +205,7 @@ echo "bind_host = 0.0.0.0" | sudo tee -a /etc/guacamole/guacd.conf > /dev/null
 echo "bind_port = 4822" | sudo tee -a /etc/guacamole/guacd.conf > /dev/null
 
 # This creates ./guacamole.properties in the current directory
-# (which is likely $WORK_DIR/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql/ at this point).
+# (which is likely $HOME/guacamole-auth-jdbc-$GUACAMOLE_VERSION/mysql/ at this point).
 # It should be created directly in /etc/guacamole or created then moved.
 # Creating it directly in /etc/guacamole:
 sudo tee /etc/guacamole/guacamole.properties > /dev/null <<EOF
@@ -243,8 +243,8 @@ echo "restarting guacd and tomcat to apply the changes"
 sudo systemctl restart guacd
 sudo systemctl restart tomcat
 
-echo "Cleaning up temporary installation files from $WORK_DIR..."
-# rm -rf "$WORK_DIR" # Uncomment to auto-cleanup
+echo "Cleaning up temporary installation files from $HOME..."
+# rm -rf "$HOME" # Uncomment to auto-cleanup
 
 echo "Installation script finished."
 fi
