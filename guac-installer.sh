@@ -9,7 +9,7 @@ if [ $(id -u ) -gt 0 ]; then
     echo "run this script as root (use sudo)"
     exit 1
 fi
-if [ systemd-detect-virt --container | grep -q -o "docker"; then
+if systemd-detect-virt --container | grep -q -o "docker"; then
    echo "your in a container, exiting..."
    exit 1
 fi
