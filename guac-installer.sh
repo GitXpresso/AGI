@@ -14,7 +14,7 @@ if systemd-detect-virt --container | grep -q -o "docker"; then
    exit 1
 fi
 if [ -d /etc/dnf ]; then
-    packages=("wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "tomcat" "mariadb-server")
+    packages=("wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "mariadb-server")
     for dnfpackages in "${packages[@]}"; do
         rpm -qa | grep "$dnfpackages" > /dev/null 2>&1
         if [ $? -ne 0 ]; then
@@ -30,7 +30,9 @@ clear
 if [ ! $(pwd) == "$HOME" ]; then
     cd $HOME # Quoting "$HOME" is safer: cd "$HOME"
 fi
-
+if [ ! rpm -qa | grep -q tomcat-lib ]; then
+   sudo dnf install tomcat
+fi
 echo "Downloading tarball"
 if [ ! -d $HOME/guacamole-server-$GUACAMOLE_VERSION ]; then
 wget -q --show-progress -o guacamole-server-$GUACAMOLE_VERSION.tar.gz https://apache.org/dyn/closer.lua/guacamole/1.5.5/source/guacamole-server-$GUACAMOLE_VERSION.tar.gz?action=download
