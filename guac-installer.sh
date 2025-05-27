@@ -1,9 +1,12 @@
 #!/bin/bash
-blue=$(printf '\033[34m')
-no_color=$(printf '\033[0m')  
-echo " 1. Ubuntu/Debian "
+blue_bold=$(printf '\033[1;34m')
+red_bold=$(printf '\033[1;31m')
+orange_bold=$(printf '\033[1;93m')
+
+no_color=$(printf '\033[0m') 
+echo " 1. ${orange_bold}Ubuntu${no_color}/${red_bold}Debian${no_color} "
 echo " 2. Fedora "
-echo -e " 3. ${blue}Arch Linux${no_color}"
+echo -e " 3. ${blue_bold}Arch Linux${no_color}"
 read -p "Pick the distro you are using: "
 GUACAMOLE_VERSION="1.5.5"
 
