@@ -1,5 +1,6 @@
 #!/bin/bash
-
+BLUE_COLOR=$(tput setaf 4)  # setaf sets foreground color. 4 is often blue.
+RESET_COLOR=$(tput sgr0)   
 GUACAMOLE_VERSION="1.5.5"
 
 # This initial check, as written, will likely cause the script to exit immediately
