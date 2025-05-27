@@ -2,7 +2,7 @@
 blue_bold=$(printf '\033[1;34m')
 orange_bold=$(printf '\033[48:2:255:165:0m%s\033[m')
 red_bold=$(printf '\033[1;31m')
-ubuntu_orange_bold=$(printf '\033[1;33m')
+ubuntu_orange_bold=$(printf '\033[1;38;2;255;255;255;48;2;255;165;0m')
 fedora_blue_bold=$(printf '\033[1;96m') 
 no_color=$(printf '\033[0m') 
 echo " 1. ${orange_bold}Ubuntu${no_color}/${red_bold}Debian${no_color} "
