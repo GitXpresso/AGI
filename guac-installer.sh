@@ -1,9 +1,9 @@
 #!/bin/bash
-BLUE_COLOR=$(tput setaf 4)  # setaf sets foreground color. 4 is often blue.
-RESET_COLOR=$(tput sgr0)   
+blue=$(printf '\033[34m')
+no_color=$(printf '\033[0m')  
 echo " 1. Ubuntu/Debian "
 echo " 2. Fedora "
-echo " 3. Arch Linux"
+echo -e " 3. ${blue}Arch Linux${no_color}"
 read -p "Pick the distro you are using: "
 GUACAMOLE_VERSION="1.5.5"
 
