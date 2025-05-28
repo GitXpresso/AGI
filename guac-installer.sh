@@ -5,10 +5,6 @@ red_bold=$(printf '\033[1;31m')
 ubuntu_orange_bold=$(printf '\033[1;38;2;255;255;255;48;2;255;165;0m')
 fedora_blue_bold=$(printf '\033[1;96m') 
 no_color=$(printf '\033[0m') 
-echo " 1. ${orange_bold}Ubuntu${no_color}/${red_bold}Debian${no_color} "
-echo " 2. ${fedora_blue_bold}Fedora${no_color} "
-echo -e " 3. ${blue_bold}Arch Linux${no_color}"
-read -p "Pick the distro you are using: "
 GUACAMOLE_VERSION="1.5.5"
 
 # This initial check, as written, will likely cause the script to exit immediately
@@ -228,4 +224,10 @@ echo "Cleaning up temporary installation files from $HOME..."
 # rm -rf "$HOME" # Uncomment to auto-cleanup
 
 echo "Installation script finished."
+
+else
+   oschecker=$(grep /etc/*release &> /dev/null)
+   if [ grep -i "Ubuntu" /etc/*release &> /dev/null ]; then
+   export $osname="Ubuntu"
+   echo "You are on $osname which this script
 fi
