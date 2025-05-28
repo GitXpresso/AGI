@@ -20,8 +20,16 @@ if [ $(id -u ) -gt 0 ]; then
 fi
 if systemd-detect-virt --container | grep -q -o "docker"; then
    echo "your in a container, exiting..."
-   exit 1
-fi
+   echo "You do you want to use systemctl python file for containers? (yes/no): " yorno
+   if [ $yorno == "y" ] || [ $yorno == "yes" ]; then
+       sudo curl -o /bin/systemctl https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/refs/heads/master/files/docker/systemctl3.py && sudo chmod -R 755 /bin/systemctl > /dev/null
+       export systemctlcmd="/bin/systemctl"
+   elif [ "$yorno" == "n" ] || [ "$yorno" == "no" ]; then
+        echo "not running an alternative to systemd in containized environment exiting..."
+        exit 1 
+   else
+        export systemctlcmd="systemctl"
+   fi
 if [ -d /etc/dnf ]; then
     packages=("wget" "cairo-devel" "libjpeg-devel" "libpng-devel" "uuid-devel" "freerdp-devel" "pango-devel" "libssh2-devel" "libtelnet-devel" "libvncserver-devel" "pulseaudio-libs-devel" "openssl-devel" "libvorbis-devel" "libwebsockets-devel" "tomcat-native" "mariadb-server")
     for dnfpackages in "${packages[@]}"; do
@@ -69,7 +77,7 @@ fi
 if ! $(rpm -qa | grep -q -o "tomcat-lib"); then
    sudo dnf install tomcat
 fi
-sudo systemctl enable --now tomcat
+sudo $systemctlcmd enable --now tomcat
 
 echo "moving war file to tomcat webapps directory"
 sudo mv $HOME/guacamole-$GUACAMOLE_VERSION.war /var/lib/tomcat/webapps/guacamole.war
@@ -80,7 +88,7 @@ sudo mkdir -p /etc/guacamole/{extensions,lib}
 echo "GUACAMOLE_HOME=/etc/guacamole" >> ./tomcat && sudo mv tomcat /etc/default
 
 sudo touch /etc/guacamole/guacd.conf
-sudo systemctl enable --now mariadb
+sudo $systemctlcmd enable --now mariadb
 
 # Check if mysql root has a password.
 mysql -u root -e "QUIT" &> /dev/null
@@ -213,8 +221,8 @@ sudo chown root:tomcat /etc/guacamole/guacamole.properties # Tomcat needs to rea
 # sudo mv guacamole.properties.example ~/ && sudo cp ~/guacamole.properties.example /etc/guacamole/guacamole.properties
 
 echo "restarting guacd and tomcat to apply the changes"
-sudo systemctl restart guacd
-sudo systemctl restart tomcat
+sudo $systemctlcmd restart guacd
+sudo $systemctlcmd restart tomcat
 
 echo "Cleaning up temporary installation files from $HOME..."
 # rm -rf "$HOME" # Uncomment to auto-cleanup
