@@ -227,7 +227,21 @@ echo "Installation script finished."
 
 else
    oschecker=$(grep /etc/*release &> /dev/null)
-   if [ grep -i "Ubuntu" /etc/*release &> /dev/null ]; then
-   export $osname="Ubuntu"
-   echo "You are on $osname which this script
+   if [ grep -i -o "Ubuntu" /etc/*release &> /dev/null ]; then
+       export osname="Ubuntu"
+       echo "You are on $osname which this script does not yet support."
+       exit 1
+   elif [ grep -i -o "Debian" /etc/*release &> /dev/null ]; then
+       export osname="Debian"
+       echo "You are on $osname which this script does not yet support."
+       exit 1
+   elif [ -d /etc/pacman.d ]; then
+       export osname="Arch Linux"
+       echo "You are on $osname which this script does not yet support."
+       exit 1
+    else
+       if [ -d /etc/apt ]; then
+          echo "You are on a Debian based distro's which has not yet been supported with script"
+          exit 1
+       fi
 fi
